@@ -6,12 +6,19 @@
 
   let { geo, area, compare, select } = $props();
 
+  // Everything chosen from the map section keeps the page scrolled to the map, so the zoom is visible.
+  const STAY = { keepScroll: true };
+  const stay = (code) => (event) => {
+    event.preventDefault();
+    select(code, undefined, STAY);
+  };
+
   let mapEl;
   let controller = $state(null);
 
   // One controller per <arcgis-map> element; the element tears down its own view on unmount.
   $effect(() => {
-    createExplorerMap(mapEl, { onSelect: (code) => select(code) }).then((c) => (controller = c));
+    createExplorerMap(mapEl, { onSelect: (code) => select(code, undefined, STAY) }).then((c) => (controller = c));
   });
 
   $effect(() => {
@@ -39,7 +46,7 @@
         <section>
           <h3>Select a larger area containing {area.name}</h3>
           <div class="link-list">
-            {#each larger as a (a.code)}<a href={`#/${a.code}`}>{a.name}</a>{/each}
+            {#each larger as a (a.code)}<a href={`#/${a.code}`} onclick={stay(a.code)}>{a.name}</a>{/each}
           </div>
         </section>
       {/if}
@@ -47,7 +54,7 @@
         <section>
           <h3>Select {childLevel === "lgd" ? "a council" : "an electoral area"} within {area.name}</h3>
           <div class="link-list">
-            {#each area.children as a (a.code)}<a href={`#/${a.code}`}>{a.name}</a>{/each}
+            {#each area.children as a (a.code)}<a href={`#/${a.code}`} onclick={stay(a.code)}>{a.name}</a>{/each}
           </div>
         </section>
       {/if}
@@ -56,7 +63,7 @@
           <h3>Other electoral areas in {area.parent.name}</h3>
           <div class="link-list">
             {#each area.parent.children.filter((a) => a !== area) as a (a.code)}
-              <a href={`#/${a.code}`}>{a.name}</a>
+              <a href={`#/${a.code}`} onclick={stay(a.code)}>{a.name}</a>
             {/each}
           </div>
         </section>
@@ -67,7 +74,7 @@
           <select
             aria-label={`Compare with another ${LEVELS[area.level].singular}`}
             value={compare?.code ?? ""}
-            onchange={(e) => select(area.code, e.currentTarget.value || null)}
+            onchange={(e) => select(area.code, e.currentTarget.value || null, STAY)}
           >
             <option value="">Choose an area…</option>
             {#if area.level === "dea"}
@@ -89,7 +96,7 @@
               <span class="compare-key"><span class="swatch swatch--area"></span> {area.name}</span>
               <span class="compare-key"><span class="swatch swatch--compare"></span> {compare.name}</span>
             </div>
-            <button class="btn btn--ghost" style="margin-top: 8px" onclick={() => select(area.code, null)}>
+            <button class="btn btn--ghost" style="margin-top: 8px" onclick={() => select(area.code, null, STAY)}>
               Clear comparison
             </button>
           {/if}

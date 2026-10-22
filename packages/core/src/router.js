@@ -7,11 +7,14 @@ function parse() {
 
 export function createRouter() {
   let state = parse();
+  let keepScroll = false;
   const listeners = new Set();
   window.addEventListener("hashchange", () => {
     state = parse();
     listeners.forEach((fn) => fn(state));
-    window.scrollTo({ top: 0 });
+    // Ordinary links start the new page at the top; navigation from the map stays put.
+    if (!keepScroll) window.scrollTo({ top: 0 });
+    keepScroll = false;
   });
   return {
     get: () => state,
@@ -19,8 +22,12 @@ export function createRouter() {
       listeners.add(fn);
       return () => listeners.delete(fn);
     },
-    go(code, compare = null) {
-      location.hash = code ? `/${code}${compare ? `?compare=${compare}` : ""}` : "/";
+    /** `keepScroll` leaves the page where it is, e.g. when the user picked an area on the map. */
+    go(code, compare = null, { keepScroll: keep = false } = {}) {
+      const hash = code ? `/${code}${compare ? `?compare=${compare}` : ""}` : "/";
+      if (location.hash === `#${hash}`) return;
+      keepScroll = keep;
+      location.hash = hash;
     },
   };
 }

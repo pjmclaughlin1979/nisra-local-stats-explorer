@@ -4,6 +4,9 @@ import "@arcgis/map-components/components/arcgis-zoom";
 import { LEVELS, ancestors } from "@nisra-explorer/core";
 import { createExplorerMap } from "@nisra-explorer/core/map";
 
+// Everything chosen from the map section keeps the page scrolled to the map, so the zoom is visible.
+const STAY = { keepScroll: true };
+
 export default function MapSection({ geo, area, compare, select }) {
   const mapRef = useRef(null);
   const controllerRef = useRef(null);
@@ -14,7 +17,7 @@ export default function MapSection({ geo, area, compare, select }) {
   // One controller per <arcgis-map> element; the element tears down its own view on unmount.
   useEffect(() => {
     let cancelled = false;
-    createExplorerMap(mapRef.current, { onSelect: (code) => selectRef.current(code) }).then((controller) => {
+    createExplorerMap(mapRef.current, { onSelect: (code) => selectRef.current(code, undefined, STAY) }).then((controller) => {
       if (cancelled) return;
       controllerRef.current = controller;
       setReady(true);
@@ -27,6 +30,11 @@ export default function MapSection({ geo, area, compare, select }) {
   useEffect(() => {
     if (ready) controllerRef.current?.show({ area, compare });
   }, [ready, area, compare]);
+
+  const stay = (code) => (event) => {
+    event.preventDefault();
+    select(code, undefined, STAY);
+  };
 
   const larger = ancestors(area);
   const childLevel = area.level === "ni" ? "lgd" : area.level === "lgd" ? "dea" : null;
@@ -51,7 +59,7 @@ export default function MapSection({ geo, area, compare, select }) {
               <h3>Select a larger area containing {area.name}</h3>
               <div className="link-list">
                 {larger.map((a) => (
-                  <a key={a.code} href={`#/${a.code}`}>
+                  <a key={a.code} href={`#/${a.code}`} onClick={stay(a.code)}>
                     {a.name}
                   </a>
                 ))}
@@ -65,7 +73,7 @@ export default function MapSection({ geo, area, compare, select }) {
               </h3>
               <div className="link-list">
                 {area.children.map((a) => (
-                  <a key={a.code} href={`#/${a.code}`}>
+                  <a key={a.code} href={`#/${a.code}`} onClick={stay(a.code)}>
                     {a.name}
                   </a>
                 ))}
@@ -79,7 +87,7 @@ export default function MapSection({ geo, area, compare, select }) {
                 {area.parent.children
                   .filter((a) => a !== area)
                   .map((a) => (
-                    <a key={a.code} href={`#/${a.code}`}>
+                    <a key={a.code} href={`#/${a.code}`} onClick={stay(a.code)}>
                       {a.name}
                     </a>
                   ))}
@@ -92,7 +100,7 @@ export default function MapSection({ geo, area, compare, select }) {
               <select
                 aria-label={`Compare with another ${LEVELS[area.level].singular}`}
                 value={compare?.code ?? ""}
-                onChange={(e) => select(area.code, e.target.value || null)}
+                onChange={(e) => select(area.code, e.target.value || null, STAY)}
               >
                 <option value="">Choose an area…</option>
                 {area.level === "dea"
@@ -123,7 +131,7 @@ export default function MapSection({ geo, area, compare, select }) {
                       <span className="swatch swatch--compare" /> {compare.name}
                     </span>
                   </div>
-                  <button className="btn btn--ghost" style={{ marginTop: 8 }} onClick={() => select(area.code, null)}>
+                  <button className="btn btn--ghost" style={{ marginTop: 8 }} onClick={() => select(area.code, null, STAY)}>
                     Clear comparison
                   </button>
                 </>

@@ -20,12 +20,13 @@ export default function App() {
   const compare = geo && route.compare ? geo.get(route.compare) : null;
 
   // Navigates to an area, keeping the current comparison only if it is the same kind of area.
+  // Pass { keepScroll: true } when navigating from the map so the page doesn't jump to the top.
   const select = useCallback(
-    (code, compareCode = route.compare) => {
+    (code, compareCode = route.compare, options) => {
       const next = geo?.get(code);
       const other = compareCode && geo?.get(compareCode);
       const keep = next && other && other.level === next.level && other.code !== next.code;
-      router.go(code, keep ? other.code : null);
+      router.go(code, keep ? other.code : null, options);
     },
     [geo, route.compare]
   );

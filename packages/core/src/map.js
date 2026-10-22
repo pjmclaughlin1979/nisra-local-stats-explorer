@@ -194,7 +194,8 @@ async function setUp(mapEl, { onSelect }) {
     }
 
     const target = selected?.geometry.extent.clone().expand(area.level === "dea" ? 1.8 : 1.15) ?? niExtent;
-    await view.goTo(target, { duration: 700 }).catch((error) => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    await view.goTo(target, { animate: !reduceMotion, duration: 1400, easing: "in-out-cubic" }).catch((error) => {
       // goTo is interrupted whenever a newer selection or user interaction takes over.
       if (error.name !== "AbortError") console.warn("Map navigation failed", error);
     });
