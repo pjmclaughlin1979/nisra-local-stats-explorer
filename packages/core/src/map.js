@@ -2,8 +2,8 @@
 // (ArcGIS Maps SDK for JavaScript 5.x map component) and hand it to `createExplorerMap`, which
 // owns the layers, selection drawing, hover and click behaviour.
 //
-// District Electoral Areas come straight from DAERA's feature service. Councils have no publicly
-// reachable official service, so their polygons are built here by unioning each council's DEAs.
+// Both boundary layers are official feature services: District Electoral Areas from DAERA, and
+// councils from the ONS UK Local Authority Districts layer filtered to Northern Ireland.
 
 import Map from "@arcgis/core/Map.js";
 import Basemap from "@arcgis/core/Basemap.js";
@@ -12,8 +12,15 @@ import FeatureLayer from "@arcgis/core/layers/FeatureLayer.js";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
 import Graphic from "@arcgis/core/Graphic.js";
 import Polygon from "@arcgis/core/geometry/Polygon.js";
-import * as unionOperator from "@arcgis/core/geometry/operators/unionOperator.js";
 import { DEA_SERVICE_URL } from "./geography.js";
+
+/**
+ * ONS Local Authority Districts (May 2026), UK, generalised and clipped to the coastline (BGC).
+ * Marked authoritative on ArcGIS Online; its N09 codes are the same council codes NISRA uses.
+ */
+const COUNCIL_SERVICE_URL =
+  "https://services1.arcgis.com/ESMARspQHYMw9BZ9/arcgis/rest/services/Local_Authority_Districts_May_2026_Boundaries_UK_BGC/FeatureServer/0";
+const NI_COUNCILS = "LAD26CD LIKE 'N09%'";
 
 const NAVY = [0, 32, 91];
 const PURPLE = [115, 39, 119];
@@ -22,10 +29,6 @@ const WGS84 = { wkid: 4326 };
 
 // Esri's public light grey canvas tiles need no API key, unlike the basemap styles service.
 const CANVAS = "https://services.arcgisonline.com/arcgis/rest/services/Canvas";
-
-// Gaps left between neighbouring DEAs by server-side generalisation become tiny holes once unioned;
-// anything below this (in square degrees, ~0.015 km²) is dropped.
-const SLIVER = 2e-6;
 
 const outlineRenderer = (fillAlpha, width) => ({
   type: "simple",
@@ -52,23 +55,6 @@ const ringSymbol = (color, width, style = "solid", fillAlpha = 0.18) => ({
   color: [...color, fillAlpha],
   outline: { color: [...color, 1], width, style },
 });
-
-/** Signed area of a ring in square degrees; Esri outer rings (clockwise) come out negative. */
-function signedArea(ring) {
-  let sum = 0;
-  for (let i = 0; i < ring.length - 1; i++) {
-    sum += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
-  }
-  return sum / 2;
-}
-
-/** A council's outline: the union of its DEAs, minus the slivers generalisation leaves behind. */
-function councilPolygon(lgd) {
-  const parts = lgd.children.map((dea) => new Polygon({ rings: dea.rings, spatialReference: WGS84 }));
-  const union = unionOperator.executeMany(parts);
-  const rings = union.rings.filter((ring) => Math.abs(signedArea(ring)) > SLIVER);
-  return new Polygon({ rings, spatialReference: WGS84 });
-}
 
 /**
  * Arcade label for the DAERA layer: its own names are upper case and Titanic has none, so labels
@@ -97,28 +83,13 @@ export function createExplorerMap(mapEl, options) {
 }
 
 async function setUp(mapEl, { geo, onSelect }) {
-  const councilShapes = new globalThis.Map(geo.lgds.map((lgd) => [lgd.code, councilPolygon(lgd)]));
-
   const lgdLayer = new FeatureLayer({
-    title: "Councils",
-    source: geo.lgds.map(
-      (lgd, i) =>
-        new Graphic({
-          geometry: councilShapes.get(lgd.code),
-          attributes: { ObjectID: i + 1, code: lgd.code, name: lgd.name },
-        })
-    ),
-    objectIdField: "ObjectID",
-    fields: [
-      { name: "ObjectID", type: "oid" },
-      { name: "code", type: "string" },
-      { name: "name", type: "string" },
-    ],
-    geometryType: "polygon",
-    spatialReference: WGS84,
-    outFields: ["*"],
+    url: COUNCIL_SERVICE_URL,
+    title: "Councils (ONS)",
+    definitionExpression: NI_COUNCILS,
+    outFields: ["LAD26CD", "LAD26NM"],
     renderer: outlineRenderer(0.12, 1.2),
-    labelingInfo: [labelClass(10, "$feature.name")],
+    labelingInfo: [labelClass(10, "$feature.LAD26NM")],
   });
   const deaLayer = new FeatureLayer({
     url: DEA_SERVICE_URL,
@@ -144,9 +115,20 @@ async function setUp(mapEl, { geo, onSelect }) {
   mapEl.popupDisabled = true;
   mapEl.constraints = { minZoom: 6, snapToZoom: false };
 
-  await mapEl.viewOnReady();
+  // Council outlines are fetched once (11 features) for drawing selections, hover and zooming.
+  const [, { features: councils }] = await Promise.all([
+    mapEl.viewOnReady(),
+    lgdLayer.queryFeatures({
+      where: NI_COUNCILS,
+      outFields: ["LAD26CD"],
+      returnGeometry: true,
+      outSpatialReference: WGS84,
+    }),
+  ]);
   const view = mapEl.view;
-  const niExtent = unionOperator.executeMany([...councilShapes.values()]).extent;
+  const councilShapes = new globalThis.Map(councils.map((f) => [f.attributes.LAD26CD, f.geometry]));
+  // Extent.union() modifies its target, so accumulate into a copy.
+  const niExtent = councils.reduce((all, f) => all.union(f.geometry.extent), councils[0].geometry.extent.clone());
 
   let current = null;
   let hoverGraphic = null;
@@ -159,7 +141,7 @@ async function setUp(mapEl, { geo, onSelect }) {
 
   /** Area code of a hit graphic from either layer (DAERA's Titanic feature has no code). */
   const codeOf = (graphic) =>
-    graphic.layer === deaLayer ? (graphic.attributes.DEACode ?? geo.uncodedDea) : graphic.attributes.code;
+    graphic.layer === deaLayer ? (graphic.attributes.DEACode ?? geo.uncodedDea) : graphic.attributes.LAD26CD;
 
   /** Outline of an area, built from the geography already loaded — no extra request. */
   function shapeOf(area) {
