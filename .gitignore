@@ -1,0 +1,6 @@
+node_modules
+dist
+.DS_Store
+
+# Local dev-server launch config (absolute paths for this machine).
+.claude/
