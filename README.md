@@ -9,6 +9,10 @@ built twice on one shared core, with the ArcGIS Maps SDK for JavaScript 5.x:
 | `apps/react` | React 19 front-end (port 5181). |
 | `apps/svelte` | Svelte 5 (runes) front-end (port 5182). |
 
+**Live:** https://pjmclaughlin1979.github.io/nisra-local-stats-explorer/ ·
+[React](https://pjmclaughlin1979.github.io/nisra-local-stats-explorer/react/) ·
+[Svelte](https://pjmclaughlin1979.github.io/nisra-local-stats-explorer/svelte/)
+
 Both apps render the same `<arcgis-map>` web component and hand it to
 `createExplorerMap()` in the core, so the map, data and styling are identical; only the
 component layer differs.
@@ -21,6 +25,9 @@ npm run dev:react     # http://localhost:5181
 npm run dev:svelte    # http://localhost:5182
 npm run build         # builds both into apps/*/dist (relative base, any static host)
 ```
+
+Pushing to `main` runs `.github/workflows/pages.yml`, which builds both apps and publishes them to
+GitHub Pages under `/react/` and `/svelte/`, with `site/index.html` as the landing page.
 
 ## Data
 
