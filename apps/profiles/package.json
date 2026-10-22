@@ -1,0 +1,15 @@
+{
+  "name": "@nisra-explorer/profiles",
+  "private": true,
+  "type": "module",
+  "scripts": { "dev": "vite --port 5183", "build": "vite build", "preview": "vite preview --port 4183" },
+  "dependencies": {
+    "@nisra-explorer/core": "*",
+    "@arcgis/core": "^5.1.27",
+    "@arcgis/map-components": "^5.1.27",
+    "@esri/calcite-components": "^5.1.1",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": { "@vitejs/plugin-react": "^6.0.1", "vite": "^8.0.0" }
+}

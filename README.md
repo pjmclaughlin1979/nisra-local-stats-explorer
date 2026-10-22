@@ -8,10 +8,12 @@ built twice on one shared core, with the ArcGIS Maps SDK for JavaScript 5.x:
 | `packages/core` | Framework-free logic: NISRA Data Portal (PxStat / JSON-stat) client, geography, every indicator definition, hash router, the ArcGIS map controller, and the shared stylesheet. |
 | `apps/react` | React 19 front-end (port 5181). |
 | `apps/svelte` | Svelte 5 (runes) front-end (port 5182). |
+| `apps/profiles` | React "statistics profiles" site (port 5183): the same data as searchable area profiles, laid out like data.census.gov/profile — search results with filters, then per-area profiles with headline stats, topic sections, charts with table views and a sticky reference map. |
 
 **Live:** https://pjmclaughlin1979.github.io/nisra-local-stats-explorer/ ·
 [React](https://pjmclaughlin1979.github.io/nisra-local-stats-explorer/react/) ·
-[Svelte](https://pjmclaughlin1979.github.io/nisra-local-stats-explorer/svelte/)
+[Svelte](https://pjmclaughlin1979.github.io/nisra-local-stats-explorer/svelte/) ·
+[Profiles](https://pjmclaughlin1979.github.io/nisra-local-stats-explorer/profiles/)
 
 Both apps render the same `<arcgis-map>` web component and hand it to
 `createExplorerMap()` in the core, so the map, data and styling are identical; only the
@@ -23,11 +25,12 @@ component layer differs.
 npm install
 npm run dev:react     # http://localhost:5181
 npm run dev:svelte    # http://localhost:5182
-npm run build         # builds both into apps/*/dist (relative base, any static host)
+npm run dev:profiles  # http://localhost:5183
+npm run build         # builds all three into apps/*/dist (relative base, any static host)
 ```
 
-Pushing to `main` runs `.github/workflows/pages.yml`, which builds both apps and publishes them to
-GitHub Pages under `/react/` and `/svelte/`, with `site/index.html` as the landing page.
+Pushing to `main` runs `.github/workflows/pages.yml`, which builds all three apps and publishes them to
+GitHub Pages under `/react/`, `/svelte/` and `/profiles/`, with `site/index.html` as the landing page.
 
 ## Data
 

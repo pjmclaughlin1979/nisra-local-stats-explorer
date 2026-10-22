@@ -9,6 +9,7 @@
   "scripts": {
     "dev:react": "npm run dev -w apps/react",
     "dev:svelte": "npm run dev -w apps/svelte",
-    "build": "npm run build -w apps/react && npm run build -w apps/svelte"
+    "build": "npm run build -w apps/react && npm run build -w apps/svelte && npm run build -w apps/profiles",
+    "dev:profiles": "npm run dev -w apps/profiles"
   }
 }

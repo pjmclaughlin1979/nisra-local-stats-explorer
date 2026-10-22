@@ -4,6 +4,7 @@ name: Deploy to GitHub Pages
 #   /         → site/index.html (chooser)
 #   /react/   → apps/react/dist
 #   /svelte/  → apps/svelte/dist
+#   /profiles/ → apps/profiles/dist
 on:
   push:
     branches: [main]
@@ -35,6 +36,7 @@ jobs:
           cp site/index.html _site/
           cp -r apps/react/dist _site/react
           cp -r apps/svelte/dist _site/svelte
+          cp -r apps/profiles/dist _site/profiles
       - uses: actions/upload-pages-artifact@v3
         with:
           path: _site
