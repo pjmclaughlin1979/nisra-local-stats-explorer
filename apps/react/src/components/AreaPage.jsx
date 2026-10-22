@@ -1,12 +1,24 @@
 import { Fragment, useState } from "react";
-import { LEVELS, NI_CODE, ancestors, categories, describeArea, headlines, icons } from "@nisra-explorer/core";
+import { LEVELS, ancestors, categories, describeArea, headlines } from "@nisra-explorer/core";
 import SearchBox from "./SearchBox.jsx";
 import IndicatorCard from "./IndicatorCard.jsx";
 import MapSection from "./MapSection.jsx";
+import ThemeSection from "./ThemeSection.jsx";
 
 export default function AreaPage({ geo, area, compare, select }) {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [copied, setCopied] = useState(false);
+  // Which themes are expanded; kept while moving between areas.
+  const [openThemes, setOpenThemes] = useState(() => new Set());
+
+  function toggleTheme(id) {
+    setOpenThemes((current) => {
+      const next = new Set(current);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
   // Remount every card when the area or comparison changes so each reloads cleanly.
   const key = `${area.code}:${compare?.code ?? ""}`;
 
@@ -80,29 +92,19 @@ export default function AreaPage({ geo, area, compare, select }) {
 
       <MapSection geo={geo} area={area} compare={compare} select={select} />
 
-      {categories.map((category) => (
-        <details className="topic" open key={category.id}>
-          <summary>
-            <span className="topic__icon" dangerouslySetInnerHTML={{ __html: icons[category.icon] }} />
-            {category.title}
-          </summary>
-          <p className="topic__intro">
-            {category.title} statistics for {area.name}
-            {area.code !== NI_CODE && (
-              <>
-                {" "}
-                compared with <a href={`#/${NI_CODE}`}>Northern Ireland</a>
-              </>
-            )}
-            {compare && ` and ${compare.name}`}.
-          </p>
-          <div className="indicator-grid">
-            {category.indicators.map((indicator) => (
-              <IndicatorCard key={`${indicator.id}:${key}`} indicator={indicator} area={area} compare={compare} geo={geo} />
-            ))}
-          </div>
-        </details>
-      ))}
+      <div className="themes">
+        {categories.map((category) => (
+          <ThemeSection
+            key={category.id}
+            category={category}
+            open={openThemes.has(category.id)}
+            onToggle={() => toggleTheme(category.id)}
+            area={area}
+            compare={compare}
+            geo={geo}
+          />
+        ))}
+      </div>
     </>
   );
 }

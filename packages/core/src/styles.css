@@ -102,15 +102,33 @@ button { font: inherit; }
 .map-side select { font: inherit; width: 100%; padding: 6px 8px; border: 1px solid var(--grey-text); border-radius: var(--radius); margin-bottom: 8px; background: #fff; }
 .compare-key { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; margin-right: 12px; }
 
-/* --- Topic sections --- */
-.topic { margin-top: 26px; border-top: 1px solid var(--grey-line); }
-.topic > summary { list-style: none; display: flex; align-items: center; gap: 12px; padding: 16px 4px; cursor: pointer; font-size: 22px; font-weight: 700; color: var(--navy); }
-.topic > summary::-webkit-details-marker { display: none; }
-.topic > summary::after { content: "+"; margin-left: auto; font-size: 26px; font-weight: 400; color: var(--purple); }
-.topic[open] > summary::after { content: "–"; }
-.topic__icon { display: grid; place-items: center; width: 42px; height: 42px; border-radius: 50%; background: var(--navy); color: #fff; flex: none; }
-.topic__intro { margin: 0 0 16px; color: var(--grey-text); }
+/* --- Theme accordion (collapsed by default, any number open, like the original) --- */
+.themes { display: flex; flex-direction: column; gap: 14px; margin-top: 32px; }
+.theme { background: var(--grey-box); border: 1px solid #ccc; }
+.theme__heading { margin: 0; font-size: inherit; }
+.theme__toggle { width: 100%; display: flex; align-items: center; gap: 14px; padding: 14px 20px; background: none; border: 0; cursor: pointer; text-align: left; font-size: 17px; font-weight: 700; color: var(--text); }
+.theme__toggle:hover { background: #ececee; }
+.theme__toggle:focus-visible { outline: 3px solid #fd0; outline-offset: -3px; }
+.theme__chevron { margin-left: auto; flex: none; color: var(--navy); transition: transform .3s ease; }
+.theme__toggle[aria-expanded="true"] .theme__chevron { transform: rotate(180deg); }
+.theme__icon { display: grid; place-items: center; width: 46px; height: 46px; border-radius: 50%; background: var(--navy); color: #fff; flex: none; }
+/* Animating grid rows from 0fr to 1fr gives a smooth height transition to "auto". */
+.theme__panel { display: grid; grid-template-rows: 0fr; transition: grid-template-rows .35s ease; }
+.theme__panel[data-open] { grid-template-rows: 1fr; }
+.theme__clip { overflow: hidden; min-height: 0; }
+.theme__body { background: #fcfcfc; border-top: 1px solid rgba(65, 64, 66, .3); padding: 16px 20px 20px; }
+.theme__intro { margin: 0 0 16px; }
 .indicator-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px; }
+@media (prefers-reduced-motion: reduce) {
+  .theme__panel, .theme__chevron { transition: none; }
+}
+
+.more { margin-top: 22px; }
+.more h3 { font-size: 18px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.more__toggle { background: none; border: 0; padding: 0; color: var(--purple); font-size: 14px; font-weight: 500; cursor: pointer; text-decoration: underline; }
+.more__body { margin-top: 10px; line-height: 1.5; }
+.more__body p { margin: 0 0 8px; }
+.more__body ul { margin: 0; padding-left: 20px; }
 
 /* --- Indicator cards --- */
 .indicator { display: flex; flex-direction: column; min-height: 180px; }
@@ -176,6 +194,7 @@ button { font: inherit; }
 
 @media print {
   .site-header, .notice, .area-header__tools, .map-section, .info-toggle, .site-footer { display: none !important; }
-  .topic > summary::after { display: none; }
+  .theme__toggle, .more__toggle { pointer-events: none; }
+  .theme__chevron { display: none; }
   .card { break-inside: avoid; }
 }

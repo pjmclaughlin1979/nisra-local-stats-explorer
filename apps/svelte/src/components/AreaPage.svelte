@@ -1,13 +1,22 @@
 <script>
-  import { LEVELS, NI_CODE, ancestors, categories, describeArea, headlines, icons } from "@nisra-explorer/core";
+  import { SvelteSet } from "svelte/reactivity";
+  import { LEVELS, ancestors, categories, describeArea, headlines } from "@nisra-explorer/core";
   import SearchBox from "./SearchBox.svelte";
   import IndicatorCard from "./IndicatorCard.svelte";
   import MapSection from "./MapSection.svelte";
+  import ThemeSection from "./ThemeSection.svelte";
 
   let { geo, area, compare, select } = $props();
 
   let aboutOpen = $state(false);
   let copied = $state(false);
+  // Which themes are expanded; kept while moving between areas.
+  const openThemes = new SvelteSet();
+
+  function toggleTheme(id) {
+    if (openThemes.has(id)) openThemes.delete(id);
+    else openThemes.add(id);
+  }
 
   async function share() {
     try {
@@ -73,22 +82,15 @@
 
 <MapSection {geo} {area} {compare} {select} />
 
-{#key `${area.code}:${compare?.code ?? ""}`}
+<div class="themes">
   {#each categories as category (category.id)}
-    <details class="topic" open>
-      <summary>
-        <span class="topic__icon">{@html icons[category.icon]}</span>
-        {category.title}
-      </summary>
-      <p class="topic__intro">
-        {category.title} statistics for {area.name}{#if area.code !== NI_CODE}{" "}compared with
-          <a href={`#/${NI_CODE}`}>Northern Ireland</a>{/if}{#if compare}{" "}and {compare.name}{/if}.
-      </p>
-      <div class="indicator-grid">
-        {#each category.indicators as indicator (indicator.id)}
-          <IndicatorCard {indicator} {area} {compare} {geo} />
-        {/each}
-      </div>
-    </details>
+    <ThemeSection
+      {category}
+      open={openThemes.has(category.id)}
+      onToggle={() => toggleTheme(category.id)}
+      {area}
+      {compare}
+      {geo}
+    />
   {/each}
-{/key}
+</div>

@@ -339,6 +339,7 @@ export const headlines = [
 ];
 
 // --- Topic sections ----------------------------------------------------------------------------
+// Each theme is a collapsible section; `more` is its "More … statistics" panel of related sources.
 
 const lgdOnly = (matrix, sel) => ({ sources: { lgd: { matrix, sel } } });
 
@@ -347,6 +348,16 @@ export const categories = [
     id: "people",
     title: "People and communities",
     icon: "people",
+    more: {
+      summary:
+        "Population totals come from NISRA's annual mid-year estimates; population characteristics such as household size, religion and language come from the 2021 census, which can be explored in more detail and cross-tabulated with NISRA's census tools.",
+      links: [
+        { label: "Mid-year population estimates", url: "https://www.nisra.gov.uk/statistics/population/mid-year-population-estimates" },
+        { label: "Census 2021 statistical bulletins", url: "https://www.nisra.gov.uk/publications/census-2021-statistical-bulletins" },
+        { label: "Census Area Explorer", url: "https://explore.nisra.gov.uk/area-explorer-2021/" },
+        { label: "Flexible Table Builder", url: "https://build.nisra.gov.uk/en/" },
+      ],
+    },
     indicators: [
       {
         id: "age",
@@ -425,6 +436,16 @@ export const categories = [
     id: "health",
     title: "Health and social care",
     icon: "health",
+    more: {
+      summary:
+        "The Department of Health publishes a wide range of health and social care statistics, including health inequalities, hospital waiting times and primary care, with interactive dashboards on NISRA's visualisation site.",
+      links: [
+        { label: "Department of Health statistics and research", url: "https://www.health-ni.gov.uk/topics/doh-statistics-and-research" },
+        { label: "Health inequalities statistics", url: "https://www.health-ni.gov.uk/topics/dhssps-statistics-and-research/health-inequalities-statistics" },
+        { label: "Hospital waiting times statistics", url: "https://www.health-ni.gov.uk/topics/doh-statistics-and-research/hospital-waiting-times-statistics" },
+        { label: "Health dashboards", url: "https://visual.nisra.gov.uk/?body=entity/health" },
+      ],
+    },
     indicators: [
       {
         id: "general-health",
@@ -527,6 +548,16 @@ export const categories = [
     id: "work",
     title: "Work, pay and benefits",
     icon: "work",
+    more: {
+      summary:
+        "The monthly Labour Market Report has the most up-to-date figures; earnings come from the Annual Survey of Hours and Earnings, and NISRA also publishes claimant count and benefits statistics.",
+      links: [
+        { label: "Labour Market Report", url: "https://www.nisra.gov.uk/statistics/labour-market-and-social-welfare/labour-market-overview" },
+        { label: "Annual Survey of Hours and Earnings", url: "https://www.nisra.gov.uk/statistics/labour-market-and-social-welfare/annual-survey-hours-and-earnings" },
+        { label: "Claimant count", url: "https://www.nisra.gov.uk/statistics/labour-market-and-social-welfare/claimant-count" },
+        { label: "Disability benefits", url: "https://www.nisra.gov.uk/statistics/labour-market-and-social-welfare/disability-benefits" },
+      ],
+    },
     indicators: [
       {
         id: "work-status",
@@ -595,6 +626,16 @@ export const categories = [
     id: "education",
     title: "Education and skills",
     icon: "education",
+    more: {
+      summary:
+        "The Department of Education publishes school enrolment, performance and school leaver statistics; the Department for the Economy covers further and higher education.",
+      links: [
+        { label: "School enrolments", url: "https://www.education-ni.gov.uk/articles/school-enrolments-overview" },
+        { label: "School leavers", url: "https://www.education-ni.gov.uk/articles/school-leavers" },
+        { label: "Further education statistics", url: "https://www.economy-ni.gov.uk/topics/statistics-and-economic-research/further-education-statistics-and-research" },
+        { label: "Higher education statistics", url: "https://www.economy-ni.gov.uk/topics/statistics-and-economic-research/higher-education-statistics-and-research" },
+      ],
+    },
     indicators: [
       {
         id: "pupils",
@@ -692,6 +733,16 @@ export const categories = [
     id: "environment",
     title: "Transport, environment and climate change",
     icon: "environment",
+    more: {
+      summary:
+        "DAERA publishes environmental statistics from a range of sources, including the greenhouse gas inventory, municipal waste management and air quality.",
+      links: [
+        { label: "Greenhouse gas inventory", url: "https://www.daera-ni.gov.uk/articles/northern-ireland-greenhouse-gas-inventory" },
+        { label: "Local authority collected municipal waste statistics", url: "https://www.daera-ni.gov.uk/articles/northern-ireland-local-authority-collected-municipal-waste-management-statistics" },
+        { label: "Environmental statistics report", url: "https://www.daera-ni.gov.uk/articles/northern-ireland-environmental-statistics-report" },
+        { label: "Air pollution in Northern Ireland", url: "https://www.daera-ni.gov.uk/articles/air-pollution-northern-ireland" },
+      ],
+    },
     indicators: [
       {
         id: "env-concern",
@@ -747,6 +798,14 @@ export const categories = [
     id: "crime",
     title: "Crime and justice",
     icon: "crime",
+    more: {
+      summary:
+        "Police recorded crime statistics are produced by NISRA statisticians in the PSNI; the Department of Justice and its agencies publish statistics on courts, prisons and youth justice.",
+      links: [
+        { label: "Police recorded crime statistics", url: "https://www.psni.police.uk/about-us/our-publications-and-reports/official-statistics/police-recorded-crime-statistics" },
+        { label: "Crime and justice statistics", url: "https://www.nisra.gov.uk/statistics/crime-and-justice" },
+      ],
+    },
     indicators: [
       {
         id: "recorded-crime",
@@ -816,6 +875,17 @@ export const categories = [
     id: "business",
     title: "Business, economy and trade",
     icon: "business",
+    more: {
+      summary:
+        "Business counts come from the Inter-Departmental Business Register; NISRA also publishes the Annual Business Inquiry, tourism statistics and economic output measures, and DAERA covers agriculture.",
+      links: [
+        { label: "Inter-Departmental Business Register", url: "https://www.nisra.gov.uk/statistics/business-statistics/inter-departmental-business-register" },
+        { label: "Annual Business Inquiry", url: "https://www.nisra.gov.uk/statistics/business-statistics/annual-business-inquiry" },
+        { label: "Tourism statistics", url: "https://www.nisra.gov.uk/statistics/tourism/annual-and-quarterly-tourism-statistics-publications" },
+        { label: "Economic output statistics", url: "https://www.nisra.gov.uk/statistics/economy/economic-output-statistics" },
+        { label: "Agricultural statistics", url: "https://www.daera-ni.gov.uk/articles/agricultural-statistics" },
+      ],
+    },
     indicators: [
       {
         id: "businesses",
