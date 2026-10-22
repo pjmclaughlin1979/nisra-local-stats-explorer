@@ -2,11 +2,13 @@
   "name": "nisra-local-stats-explorer",
   "private": true,
   "type": "module",
-  "workspaces": ["packages/*", "apps/*"],
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
   "scripts": {
     "dev:react": "npm run dev -w apps/react",
     "dev:svelte": "npm run dev -w apps/svelte",
-    "build": "npm run build -w apps/react && npm run build -w apps/svelte",
-    "boundaries": "node packages/core/scripts/build-boundaries.mjs"
+    "build": "npm run build -w apps/react && npm run build -w apps/svelte"
   }
 }

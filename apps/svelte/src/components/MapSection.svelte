@@ -18,7 +18,7 @@
 
   // One controller per <arcgis-map> element; the element tears down its own view on unmount.
   $effect(() => {
-    createExplorerMap(mapEl, { onSelect: (code) => select(code, undefined, STAY) }).then((c) => (controller = c));
+    createExplorerMap(mapEl, { geo, onSelect: (code) => select(code, undefined, STAY) }).then((c) => (controller = c));
   });
 
   $effect(() => {

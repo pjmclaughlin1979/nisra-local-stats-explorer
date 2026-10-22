@@ -34,7 +34,7 @@
   {#if error}
     <p class="error">Could not load the area boundaries: {error.message}</p>
   {:else if !geo}
-    <div class="skeleton"></div>
+    <p class="loading" role="status">Loading area boundaries from DAERA…</p>
   {:else if area}
     <AreaPage {geo} {area} {compare} {select} />
   {:else}

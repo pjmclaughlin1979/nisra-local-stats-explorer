@@ -17,7 +17,7 @@ export default function MapSection({ geo, area, compare, select }) {
   // One controller per <arcgis-map> element; the element tears down its own view on unmount.
   useEffect(() => {
     let cancelled = false;
-    createExplorerMap(mapRef.current, { onSelect: (code) => selectRef.current(code, undefined, STAY) }).then((controller) => {
+    createExplorerMap(mapRef.current, { geo, onSelect: (code) => selectRef.current(code, undefined, STAY) }).then((controller) => {
       if (cancelled) return;
       controllerRef.current = controller;
       setReady(true);

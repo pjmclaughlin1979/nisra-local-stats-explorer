@@ -1,21 +1,31 @@
 // Framework-free controller for the explorer's map. Both apps render an <arcgis-map> element
 // (ArcGIS Maps SDK for JavaScript 5.x map component) and hand it to `createExplorerMap`, which
 // owns the layers, selection drawing, hover and click behaviour.
+//
+// District Electoral Areas come straight from DAERA's feature service. Councils have no publicly
+// reachable official service, so their polygons are built here by unioning each council's DEAs.
 
 import Map from "@arcgis/core/Map.js";
 import Basemap from "@arcgis/core/Basemap.js";
 import TileLayer from "@arcgis/core/layers/TileLayer.js";
-import GeoJSONLayer from "@arcgis/core/layers/GeoJSONLayer.js";
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer.js";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer.js";
 import Graphic from "@arcgis/core/Graphic.js";
-import { boundaryUrls } from "./geography.js";
+import Polygon from "@arcgis/core/geometry/Polygon.js";
+import * as unionOperator from "@arcgis/core/geometry/operators/unionOperator.js";
+import { DEA_SERVICE_URL } from "./geography.js";
 
 const NAVY = [0, 32, 91];
 const PURPLE = [115, 39, 119];
 const GREEN = [15, 130, 67];
+const WGS84 = { wkid: 4326 };
 
 // Esri's public light grey canvas tiles need no API key, unlike the basemap styles service.
 const CANVAS = "https://services.arcgisonline.com/arcgis/rest/services/Canvas";
+
+// Gaps left between neighbouring DEAs by server-side generalisation become tiny holes once unioned;
+// anything below this (in square degrees, ~0.015 km²) is dropped.
+const SLIVER = 2e-6;
 
 const outlineRenderer = (fillAlpha, width) => ({
   type: "simple",
@@ -26,8 +36,8 @@ const outlineRenderer = (fillAlpha, width) => ({
   },
 });
 
-const labelClass = (size) => ({
-  labelExpressionInfo: { expression: "$feature.name" },
+const labelClass = (size, expression) => ({
+  labelExpressionInfo: { expression },
   symbol: {
     type: "text",
     color: [...NAVY, 1],
@@ -43,6 +53,33 @@ const ringSymbol = (color, width, style = "solid", fillAlpha = 0.18) => ({
   outline: { color: [...color, 1], width, style },
 });
 
+/** Signed area of a ring in square degrees; Esri outer rings (clockwise) come out negative. */
+function signedArea(ring) {
+  let sum = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    sum += ring[i][0] * ring[i + 1][1] - ring[i + 1][0] * ring[i][1];
+  }
+  return sum / 2;
+}
+
+/** A council's outline: the union of its DEAs, minus the slivers generalisation leaves behind. */
+function councilPolygon(lgd) {
+  const parts = lgd.children.map((dea) => new Polygon({ rings: dea.rings, spatialReference: WGS84 }));
+  const union = unionOperator.executeMany(parts);
+  const rings = union.rings.filter((ring) => Math.abs(signedArea(ring)) > SLIVER);
+  return new Polygon({ rings, spatialReference: WGS84 });
+}
+
+/**
+ * Arcade label for the DAERA layer: its own names are upper case and Titanic has none, so labels
+ * use the official NISRA names keyed by code.
+ */
+function deaLabelExpression(geo) {
+  const pairs = geo.deas.map((d) => `${JSON.stringify(d.code)}, ${JSON.stringify(d.name)}`).join(", ");
+  const fallback = JSON.stringify(geo.uncodedDea ?? "");
+  return `var code = DefaultValue($feature.DEACode, ${fallback}); return Decode(code, ${pairs}, "");`;
+}
+
 const controllers = new WeakMap();
 
 /**
@@ -51,7 +88,7 @@ const controllers = new WeakMap();
  * rebuild the map mid-animation. The element destroys its own view when it leaves the DOM.
  *
  * @param {HTMLElement} mapEl  an <arcgis-map> element
- * @param {{ onSelect: (code: string) => void }} options
+ * @param {{ geo: object, onSelect: (code: string) => void }} options
  * @returns {Promise<{ show: ({ area, compare }) => Promise<void>, destroy: () => void }>}
  */
 export function createExplorerMap(mapEl, options) {
@@ -59,21 +96,37 @@ export function createExplorerMap(mapEl, options) {
   return controllers.get(mapEl);
 }
 
-async function setUp(mapEl, { onSelect }) {
-  const lgdLayer = new GeoJSONLayer({
-    url: boundaryUrls.lgd,
+async function setUp(mapEl, { geo, onSelect }) {
+  const councilShapes = new globalThis.Map(geo.lgds.map((lgd) => [lgd.code, councilPolygon(lgd)]));
+
+  const lgdLayer = new FeatureLayer({
     title: "Councils",
+    source: geo.lgds.map(
+      (lgd, i) =>
+        new Graphic({
+          geometry: councilShapes.get(lgd.code),
+          attributes: { ObjectID: i + 1, code: lgd.code, name: lgd.name },
+        })
+    ),
+    objectIdField: "ObjectID",
+    fields: [
+      { name: "ObjectID", type: "oid" },
+      { name: "code", type: "string" },
+      { name: "name", type: "string" },
+    ],
+    geometryType: "polygon",
+    spatialReference: WGS84,
     outFields: ["*"],
     renderer: outlineRenderer(0.12, 1.2),
-    labelingInfo: [labelClass(10)],
+    labelingInfo: [labelClass(10, "$feature.name")],
   });
-  const deaLayer = new GeoJSONLayer({
-    url: boundaryUrls.dea,
-    title: "District Electoral Areas",
-    outFields: ["*"],
+  const deaLayer = new FeatureLayer({
+    url: DEA_SERVICE_URL,
+    title: "District Electoral Areas (DAERA)",
+    outFields: ["DEACode"],
     visible: false,
     renderer: outlineRenderer(0.06, 0.8),
-    labelingInfo: [labelClass(9)],
+    labelingInfo: [labelClass(9, deaLabelExpression(geo))],
   });
   const overlay = new GraphicsLayer({ title: "Selection" });
 
@@ -93,8 +146,7 @@ async function setUp(mapEl, { onSelect }) {
 
   await mapEl.viewOnReady();
   const view = mapEl.view;
-  await Promise.all([lgdLayer.load(), deaLayer.load()]);
-  const niExtent = lgdLayer.fullExtent;
+  const niExtent = unionOperator.executeMany([...councilShapes.values()]).extent;
 
   let current = null;
   let hoverGraphic = null;
@@ -105,17 +157,21 @@ async function setUp(mapEl, { onSelect }) {
   tooltip.hidden = true;
   mapEl.append(tooltip);
 
-  async function featureFor(code) {
-    for (const layer of [deaLayer, lgdLayer]) {
-      const { features } = await layer.queryFeatures({
-        where: `code = '${code}'`,
-        returnGeometry: true,
-        outSpatialReference: view.spatialReference,
-        outFields: ["*"],
-      });
-      if (features.length) return features[0];
-    }
-    return null;
+  /** Area code of a hit graphic from either layer (DAERA's Titanic feature has no code). */
+  const codeOf = (graphic) =>
+    graphic.layer === deaLayer ? (graphic.attributes.DEACode ?? geo.uncodedDea) : graphic.attributes.code;
+
+  /** Outline of an area, built from the geography already loaded — no extra request. */
+  function shapeOf(area) {
+    if (area.level === "lgd") return councilShapes.get(area.code);
+    return new Polygon({ rings: area.rings, spatialReference: WGS84 });
+  }
+
+  /** DAERA has no council field, but DEA codes embed their council's number. */
+  function deasIn(council) {
+    const clause = `DEACode LIKE 'N1000${council.code.slice(-2)}%'`;
+    const uncoded = geo.get(geo.uncodedDea);
+    return uncoded?.parent === council ? `${clause} OR DEACode IS NULL` : clause;
   }
 
   async function hit(event) {
@@ -129,7 +185,7 @@ async function setUp(mapEl, { onSelect }) {
   handles.push(
     view.on("click", async (event) => {
       const graphic = await hit(event);
-      const code = graphic?.attributes.code;
+      const code = graphic && codeOf(graphic);
       if (code && code !== current?.area.code) onSelect(code);
     })
   );
@@ -141,15 +197,13 @@ async function setUp(mapEl, { onSelect }) {
       pending = true;
       try {
         const graphic = await hit(event);
+        const area = graphic && geo.get(codeOf(graphic));
         if (hoverGraphic) overlay.remove(hoverGraphic);
         hoverGraphic = null;
-        if (graphic) {
-          hoverGraphic = new Graphic({
-            geometry: graphic.geometry,
-            symbol: ringSymbol(PURPLE, 2, "solid", 0.08),
-          });
+        if (area) {
+          hoverGraphic = new Graphic({ geometry: shapeOf(area), symbol: ringSymbol(PURPLE, 2, "solid", 0.08) });
           overlay.add(hoverGraphic);
-          tooltip.textContent = graphic.attributes.name;
+          tooltip.textContent = area.name;
           tooltip.style.transform = `translate(${event.x + 14}px, ${event.y + 14}px)`;
           tooltip.hidden = false;
           mapEl.style.cursor = "pointer";
@@ -177,23 +231,18 @@ async function setUp(mapEl, { onSelect }) {
 
     const council = area.level === "dea" ? area.parent : area.level === "lgd" ? area : null;
     deaLayer.visible = Boolean(council);
-    deaLayer.definitionExpression = council ? `parent = '${council.code}'` : null;
+    deaLayer.definitionExpression = council ? deasIn(council) : "1=0";
     lgdLayer.labelsVisible = !council;
 
-    const [selected, compared] = await Promise.all([
-      area.level === "ni" ? null : featureFor(area.code),
-      compare ? featureFor(compare.code) : null,
-    ]);
-    if (current?.area !== area) return; // a newer selection arrived while querying
-
-    if (compared) {
-      overlay.add(new Graphic({ geometry: compared.geometry, symbol: ringSymbol(GREEN, 2.5, "dash", 0.12) }));
+    const selected = area.level === "ni" ? null : shapeOf(area);
+    if (compare) {
+      overlay.add(new Graphic({ geometry: shapeOf(compare), symbol: ringSymbol(GREEN, 2.5, "dash", 0.12) }));
     }
     if (selected) {
-      overlay.add(new Graphic({ geometry: selected.geometry, symbol: ringSymbol(PURPLE, 3.5) }));
+      overlay.add(new Graphic({ geometry: selected, symbol: ringSymbol(PURPLE, 3.5) }));
     }
 
-    const target = selected?.geometry.extent.clone().expand(area.level === "dea" ? 1.8 : 1.15) ?? niExtent;
+    const target = selected?.extent.clone().expand(area.level === "dea" ? 1.8 : 1.15) ?? niExtent;
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     await view.goTo(target, { animate: !reduceMotion, duration: 1400, easing: "in-out-cubic" }).catch((error) => {
       // goTo is interrupted whenever a newer selection or user interaction takes over.

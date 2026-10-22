@@ -6,8 +6,7 @@
   "exports": {
     ".": "./src/index.js",
     "./map": "./src/map.js",
-    "./styles.css": "./src/styles.css",
-    "./data/*": "./data/*"
+    "./styles.css": "./src/styles.css"
   },
   "peerDependencies": {
     "@arcgis/core": "^5.1.0"

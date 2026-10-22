@@ -67,9 +67,10 @@ button { font: inherit; }
 .link-list { display: flex; flex-wrap: wrap; gap: 4px 0; line-height: 1.6; }
 .link-list a:not(:last-child)::after { content: ","; color: var(--text); margin-right: 6px; }
 .ni-svg { width: 100%; height: auto; display: block; margin-top: 8px; }
-.ni-svg path { fill: #4069c4; stroke: #fff; stroke-width: 1; transition: fill .15s; }
+/* Councils are drawn from their DEAs, so a stroke in the fill colour hides the seams between them. */
+.ni-svg path { fill: #4069c4; stroke: #4069c4; stroke-width: .8; transition: fill .15s, stroke .15s; }
 .ni-link { display: block; }
-.ni-link:hover path, .ni-link:focus-visible path { fill: var(--purple); }
+.ni-link:hover path, .ni-link:focus-visible path { fill: var(--purple); stroke: var(--purple); }
 
 /* --- Cards & area header --- */
 .card { background: var(--grey-box); border-radius: var(--radius); padding: 18px; }
@@ -140,6 +141,7 @@ button { font: inherit; }
 .indicator__info p { margin: 0 0 6px; }
 .indicator__info ul { margin: 0; padding-left: 18px; }
 .indicator__period { font-size: 13px; color: var(--grey-text); margin: 8px 0 10px; }
+.loading { margin: 40px 0; color: var(--grey-text); }
 .unavailable, .error { color: var(--grey-text); font-size: 14px; margin-top: 10px; }
 .error { color: #b00020; }
 .skeleton { margin-top: 12px; height: 90px; border-radius: var(--radius); background: linear-gradient(90deg, #ececee 25%, #f8f8f9 50%, #ececee 75%); background-size: 200% 100%; animation: shimmer 1.2s infinite; }

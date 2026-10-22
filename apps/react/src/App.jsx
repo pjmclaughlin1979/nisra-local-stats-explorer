@@ -38,7 +38,7 @@ export default function App() {
         {error ? (
           <p className="error">Could not load the area boundaries: {error.message}</p>
         ) : !geo ? (
-          <div className="skeleton" />
+          <p className="loading" role="status">Loading area boundaries from DAERA…</p>
         ) : area ? (
           <AreaPage geo={geo} area={area} compare={compare} select={select} />
         ) : (
